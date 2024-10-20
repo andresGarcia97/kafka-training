@@ -18,6 +18,7 @@ public class ItemEntity {
     private String id;
     private int quantity;
     private double value;
+    private String name;
 
     public void decreaseQuantity(int quantity) throws Exception {
 

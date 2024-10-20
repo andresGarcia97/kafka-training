@@ -18,15 +18,32 @@ public class ItemHandler {
 
     public void process(final Item item){
 
-        if(item == null || item.id() == null || item.id().isBlank() || item.quantity() == null || item.value() == null){
-            log.error("Item not valid(all attributes are required): {}", item);
+        if(item == null || item.id() == null || item.id().isBlank()){
+            log.error("Item not valid(ID attributes is required): {}", item);
+            return;
+        }
+
+        if(item.quantity() == null || item.quantity().compareTo(0) == 0 || item.value() == null || item.value().compareTo(0.0) == 0){
+            log.error("Item not valid(quantity and value can not be 0): {}", item);
+            return;
+        }
+
+        if(item.name() == null || item.name().isBlank()){
+            log.error("Item not valid(the name is required): {}", item);
             return;
         }
 
         itemRepository.findById(item.id())
-                .ifPresentOrElse(itemEntity -> {
+                .ifPresentOrElse(existingItem -> {
 
-                    final ItemEntity itemUpdate =  itemRepository.save(itemMapper.toEntity(item));
+                    final ItemEntity itemToUpdate = itemMapper.toEntity(item);
+
+                    if(item.quantity().compareTo(existingItem.getQuantity()) != 0){
+                        log.warn("change of quantity of {} to {}, don't permitted", item.quantity(), existingItem.getQuantity());
+                        itemToUpdate.setQuantity(existingItem.getQuantity());
+                    }
+
+                    final ItemEntity itemUpdate =  itemRepository.save(itemToUpdate);
                     log.info("itemUpdate: {}", itemUpdate);
 
                 }, () -> {
