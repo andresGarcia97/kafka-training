@@ -18,6 +18,11 @@ public class ItemHandler {
 
     public void process(final Item item){
 
+        if(item == null || item.id() == null || item.id().isBlank() || item.quantity() == null || item.value() == null){
+            log.error("Item not valid(all attributes are required): {}", item);
+            return;
+        }
+
         itemRepository.findById(item.id())
                 .ifPresentOrElse(itemEntity -> {
 
@@ -28,6 +33,28 @@ public class ItemHandler {
 
                     final ItemEntity itemSaved =  itemRepository.save(itemMapper.toEntity(item));
                     log.info("itemSaved: {}", itemSaved);
+
+                });
+
+    }
+
+    public void delete(final Item item) {
+
+        if(item == null || item.id() == null || item.id().isBlank()){
+            log.error("Item to delete no valid(ID attribute is required): {}", item);
+            return;
+        }
+
+        itemRepository.findById(item.id())
+                .ifPresent(itemToDelete -> {
+
+                    if(itemToDelete.getQuantity() > 0){
+                        log.warn("Item can not be deleted, until have {} elements on stock", itemToDelete.getQuantity());
+                        return;
+                    }
+
+                    itemRepository.deleteById(itemToDelete.getId());
+                    log.warn("Item deleted: {}", itemToDelete);
 
                 });
 
