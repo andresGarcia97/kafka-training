@@ -3,14 +3,21 @@ package co.example.kafkatraining.jpa.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Entity
 @Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@Entity(name = "items")
 public class ItemEntity {
 
     @Id
-    private String itemId;
+    private String id;
     private int quantity;
+    private double value;
 
     public void decreaseQuantity(int quantity) throws Exception {
 

@@ -1,6 +1,7 @@
 package co.example.kafkatraining.config;
 
 import co.example.kafkatraining.schemas.InsufficientStock;
+import co.example.kafkatraining.schemas.Item;
 import co.example.kafkatraining.schemas.LowStock;
 import co.example.kafkatraining.schemas.Sale;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +29,17 @@ import java.util.Map;
 @EnableKafka
 public class KafkaConfig {
 
-    public static final String KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY = "listenerContainerFactory";
+    public static final String KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY = "consumerSalesContainerFactory";
+    public static final String KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY = "listenerItemsContainerFactory";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
+
+    @Value("${spring.kafka.consumer.concurrency}")
+    private int concurrency;
 
     @Bean
     public KafkaAdmin kafkaAdmin() {
@@ -70,9 +75,24 @@ public class KafkaConfig {
     }
 
     @Bean(name = KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY)
-    public ConcurrentKafkaListenerContainerFactory<String, Sale> kafkaListenerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, Sale> kafkaConsumerSaleFactory() {
         final ConcurrentKafkaListenerContainerFactory<String, Sale> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerSaleFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
+        factory.setCommonErrorHandler(commonErrorHandler());
+        factory.setConcurrency(concurrency);
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, Item> consumerItemFactory() {
+        return new DefaultKafkaConsumerFactory<>(defaultConfigDeserialization(), new StringDeserializer(), new JsonDeserializer<>(Item.class));
+    }
+
+    @Bean(name = KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY)
+    public ConcurrentKafkaListenerContainerFactory<String, Item> kafkaConsumerItemFactory() {
+        final ConcurrentKafkaListenerContainerFactory<String, Item> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerItemFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         factory.setCommonErrorHandler(commonErrorHandler());
         factory.setConcurrency(3);

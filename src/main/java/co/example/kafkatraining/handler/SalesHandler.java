@@ -21,7 +21,6 @@ public class SalesHandler {
     private final LowStockProducer lowStockProducer;
     private final InsufficientStockProducer insufficientStockProducer;
 
-
     public void process(Sale sale) {
 
         for (Item item: sale.items()){

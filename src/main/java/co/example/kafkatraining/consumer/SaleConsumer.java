@@ -14,21 +14,14 @@ import static co.example.kafkatraining.config.KafkaConfig.KAFKA_BEAN_NAME_SALE_C
 @RequiredArgsConstructor
 public class SaleConsumer {
 
-    private final SalesHandler handler;
-
+    private final SalesHandler salesHandler;
 
     @KafkaListener(id = "SALES", topics = "SALES", containerFactory = KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY)
     public void consume(final Sale sale) {
 
-        log.info("sale: {}", sale);
-
-        handler.process(sale);
+        log.debug("sale: {}", sale);
+        salesHandler.process(sale);
 
     }
-
-
-
-
-
 
 }

@@ -34,9 +34,12 @@ dependencies {
 
     runtimeOnly 'org.postgresql:postgresql'
 
-
     annotationProcessor 'org.projectlombok:lombok'
 
+    // https://mvnrepository.com/artifact/org.mapstruct/mapstruct
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.2'
+    implementation 'org.mapstruct:mapstruct-processor:1.6.2'
+    implementation 'org.mapstruct:mapstruct:1.6.2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
