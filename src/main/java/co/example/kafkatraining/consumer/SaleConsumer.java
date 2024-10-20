@@ -4,10 +4,10 @@ import co.example.kafkatraining.handler.SalesHandler;
 import co.example.kafkatraining.schemas.Sale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.listener.ConsumerAwareListenerErrorHandler;
 import org.springframework.stereotype.Component;
+
+import static co.example.kafkatraining.config.KafkaConfig.KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY;
 
 @Component
 @Slf4j
@@ -17,10 +17,12 @@ public class SaleConsumer {
     private final SalesHandler handler;
 
 
-    @KafkaListener(id = "SALES", topics = "SALES")
-    public void consume(Sale message) {
+    @KafkaListener(id = "SALES", topics = "SALES", containerFactory = KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY)
+    public void consume(final Sale sale) {
 
-        handler.process(message);
+        log.info("sale: {}", sale);
+
+        handler.process(sale);
 
     }
 
