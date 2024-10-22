@@ -33,69 +33,28 @@ public class SalesHandler {
     private final SaleRepository saleRepository;
     private final SaleItemRepository saleItemRepository;
 
+    // TODO buscar forma de devolver todas las transacciones en caso de error, tal vez usar @Transactional
     public void process(Sale sale) {
 
         if(sale == null || sale.items().isEmpty()){
+            log.error("A sale required at least one item: {}", sale);
             return;
         }
 
-        // TODO validar que no exista la venta, si existe no hacer nada
-
-        final List<ItemEntity> stockUpdates = new ArrayList<>(sale.items().size());
-
-        for (Item item: sale.items()){
-
-            Optional<ItemEntity> entityOpt = repository.findById(item.id());
-
-            if (entityOpt.isPresent()) {
-
-                ItemEntity itemEntity = entityOpt.get();
-
-                try{
-
-                    itemEntity.decreaseQuantity(item.quantity());
-
-                } catch (Exception e) {
-                    InsufficientStock message2 = InsufficientStock.builder()
-                            .id(item.id())
-                            .saleId(sale.id())
-                            .customerId(sale.customerId())
-                            .descripcion("Inventory insufficient stock for sale with %s quantity".formatted(itemEntity.getQuantity()))
-                            .build();
-
-                    insufficientStockProducer.send(message2);
-                }
-
-                final ItemEntity quantityUpdated = repository.save(itemEntity);
-                stockUpdates.add(quantityUpdated);
-
-                final SaleEntity entity = saleMapper.toEntity(sale);
-                log.info("saleEn0: {}", entity);
-                final SaleEntity saleSaved = saleRepository.save(entity);
-                log.info("saleEn1: {}", saleSaved);
-
-                final List<SaleItemEntity> saleItemEntities = new ArrayList<>(sale.items().size());
-
-                stockUpdates.forEach(itemStock -> {
-                    final SaleItemEntity saleItemEntity = new SaleItemEntity();
-                    saleItemEntity.setValue(itemStock.getValue());
-                    saleItemEntity.setItem(itemStock);
-                    saleItemEntity.setSale(saleSaved);
-
-                    sale.items().stream()
-                            .filter(validSale -> itemStock.getId().equals(validSale.id()))
-                            .findFirst()
-                            .ifPresent(itemQuantity -> saleItemEntity.setQuantity(itemQuantity.quantity()));
-
-                    saleItemEntities.add(saleItemEntity);
-                });
-
-                final List<SaleItemEntity> saleItemSaved = saleItemRepository.saveAll(saleItemEntities);
-                log.info("saleEn2: {}", saleItemSaved);
-
-                sendAlertsLowStock(stockUpdates, sale);
-            }
+        if(sale.id() == null || sale.id().isBlank() || saleRepository.findById(sale.id()).isPresent()){
+            log.error("A sale can not be exist previously: {}", sale);
+            return;
         }
+
+        final List<ItemEntity> stockUpdates = updateStockAndSendAlert(sale);
+
+        final SaleEntity saleSaved = saleRepository.save(saleMapper.toEntity(sale));
+
+        final List<SaleItemEntity> saleItems = saveItemsSale(saleSaved, stockUpdates, sale);
+        log.info("saleItems: {}", saleItems);
+
+        sendAlertsLowStock(stockUpdates, sale);
+
     }
 
     private void sendAlertsLowStock(final List<ItemEntity> stockUpdates, final Sale sale) {
@@ -114,6 +73,64 @@ public class SalesHandler {
             }
         });
 
+    }
+
+    private List<ItemEntity> updateStockAndSendAlert(final Sale sale){
+
+        final List<ItemEntity> stockUpdates = new ArrayList<>(sale.items().size());
+
+        for (final Item item: sale.items()) {
+
+            final Optional<ItemEntity> entityOpt = repository.findById(item.id());
+
+            if (entityOpt.isPresent()) {
+
+                final ItemEntity itemEntity = entityOpt.get();
+
+                try {
+
+                    itemEntity.decreaseQuantity(item.quantity());
+
+                    final ItemEntity quantityUpdated = repository.save(itemEntity);
+                    stockUpdates.add(quantityUpdated);
+
+                } catch (Exception e) {
+                    // TODO quitar builder
+                    InsufficientStock message2 = InsufficientStock.builder()
+                            .id(item.id())
+                            .saleId(sale.id())
+                            .customerId(sale.customerId())
+                            .descripcion("Inventory insufficient stock for sale with %s quantity".formatted(itemEntity.getQuantity()))
+                            .build();
+
+                    insufficientStockProducer.send(message2);
+                }
+            }
+        }
+
+        return stockUpdates;
+    }
+
+    private List<SaleItemEntity> saveItemsSale(final SaleEntity saleSaved, final List<ItemEntity> stockUpdates, final Sale originalSale){
+
+        final List<SaleItemEntity> saleItemEntities = new ArrayList<>(stockUpdates.size());
+
+        stockUpdates.forEach(itemStock -> {
+
+            final SaleItemEntity saleItem = new SaleItemEntity();
+            saleItem.setValue(itemStock.getValue());
+            saleItem.setItem(itemStock);
+            saleItem.setSale(saleSaved);
+
+            originalSale.items().stream()
+                    .filter(item -> itemStock.getId().equals(item.id()))
+                    .findFirst()
+                    .ifPresent(itemQuantity -> saleItem.setQuantity(itemQuantity.quantity()));
+
+            saleItemEntities.add(saleItem);
+        });
+
+        return saleItemRepository.saveAll(saleItemEntities);
     }
 
 }
