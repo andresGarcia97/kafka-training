@@ -1,7 +1,5 @@
 package co.example.kafkatraining.schemas;
 
-import lombok.Builder;
+public record LowStock(String id, String saleId, String customerId, String description) {
 
-@Builder
-public record LowStock(String id, String saleId, String customerId, String descripcion) {
 }
