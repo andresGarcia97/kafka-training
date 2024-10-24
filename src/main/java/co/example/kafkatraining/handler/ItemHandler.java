@@ -38,9 +38,13 @@ public class ItemHandler {
 
                     final ItemEntity itemToUpdate = itemMapper.toEntity(item);
 
-                    if(item.quantity().compareTo(existingItem.getQuantity()) != 0){
-                        log.warn("change of quantity of {} to {}, don't permitted", item.quantity(), existingItem.getQuantity());
+                    if(item.quantity().compareTo(existingItem.getQuantity()) < 0){
+                        log.warn("change of quantity of {} to {}, don't permitted on item {}", item.quantity(), existingItem.getQuantity(), item.id());
                         itemToUpdate.setQuantity(existingItem.getQuantity());
+                    }
+
+                    else if(item.quantity().compareTo(existingItem.getQuantity()) > 0){
+                        log.info("adding new stock passing of {} to {} on item {}", existingItem.getQuantity(), item.quantity(), item.id());
                     }
 
                     final ItemEntity itemUpdate =  itemRepository.save(itemToUpdate);

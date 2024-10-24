@@ -79,9 +79,9 @@ public class SalesHandler {
 
         final List<ItemEntity> stockUpdates = new ArrayList<>(sale.items().size());
 
-        for (final Item item: sale.items()) {
+        for (final Item saleItem: sale.items()) {
 
-            final Optional<ItemEntity> entityOpt = repository.findById(item.id());
+            final Optional<ItemEntity> entityOpt = repository.findById(saleItem.id());
 
             if (entityOpt.isPresent()) {
 
@@ -89,21 +89,21 @@ public class SalesHandler {
 
                 try {
 
-                    itemEntity.decreaseQuantity(item.quantity());
+                    itemEntity.decreaseQuantity(saleItem.quantity());
 
                     final ItemEntity quantityUpdated = repository.save(itemEntity);
                     stockUpdates.add(quantityUpdated);
 
                 } catch (Exception e) {
-                    // TODO quitar builder
-                    InsufficientStock message2 = InsufficientStock.builder()
-                            .id(item.id())
-                            .saleId(sale.id())
-                            .customerId(sale.customerId())
-                            .descripcion("Inventory insufficient stock for sale with %s quantity".formatted(itemEntity.getQuantity()))
-                            .build();
+                    log.warn("Item {} has {} and the sale require {}", saleItem.id(), itemEntity.getQuantity(), saleItem.quantity());
+                    final InsufficientStock insufficientStock = new InsufficientStock(
+                            saleItem.id(),
+                            sale.id(),
+                            sale.customerId(),
+                            "Inventory insufficient stock for sale with %s quantity, by a sale of %s".formatted(itemEntity.getQuantity(), saleItem.quantity())
+                    );
 
-                    insufficientStockProducer.send(message2);
+                    insufficientStockProducer.send(insufficientStock);
                 }
             }
         }
