@@ -29,8 +29,13 @@ import java.util.Map;
 @EnableKafka
 public class KafkaConfig {
 
+    public static final String TOPIC_SALES = "SALES";
+    public static final String TOPIC_ITEMS = "ITEMS";
+    public static final String TOPIC_INSUFFICIENT_STOCK = "INSUFFICIENT_STOCK";
+
     public static final String KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY = "consumerSalesContainerFactory";
-    public static final String KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY = "listenerItemsContainerFactory";
+    public static final String KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY = "consumerItemsContainerFactory";
+    public static final String KAFKA_BEAN_NAME_INSUFFICIENT_STOCK_CONSUMER_FACTORY = "consumerInsufficientStockContainerFactory";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -95,7 +100,22 @@ public class KafkaConfig {
         factory.setConsumerFactory(consumerItemFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         factory.setCommonErrorHandler(commonErrorHandler());
-        factory.setConcurrency(3);
+        factory.setConcurrency(concurrency);
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, InsufficientStock> consumerInsufficientStockFactory() {
+        return new DefaultKafkaConsumerFactory<>(defaultConfigDeserialization(), new StringDeserializer(), new JsonDeserializer<>(InsufficientStock.class));
+    }
+
+    @Bean(name = KAFKA_BEAN_NAME_INSUFFICIENT_STOCK_CONSUMER_FACTORY)
+    public ConcurrentKafkaListenerContainerFactory<String, InsufficientStock> kafkaConsumerInsufficientStockFactory() {
+        final ConcurrentKafkaListenerContainerFactory<String, InsufficientStock> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerInsufficientStockFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
+        factory.setCommonErrorHandler(commonErrorHandler());
+        factory.setConcurrency(concurrency);
         return factory;
     }
 

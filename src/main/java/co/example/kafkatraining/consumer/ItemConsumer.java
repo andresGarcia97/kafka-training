@@ -10,6 +10,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import static co.example.kafkatraining.config.KafkaConfig.KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY;
+import static co.example.kafkatraining.config.KafkaConfig.TOPIC_ITEMS;
 
 @Slf4j
 @Component
@@ -18,7 +19,7 @@ public class ItemConsumer {
 
     private final ItemHandler itemHandler;
 
-    @KafkaListener(id = "ITEMS", topics = "ITEMS", containerFactory = KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY)
+    @KafkaListener(id = TOPIC_ITEMS, topics = TOPIC_ITEMS, containerFactory = KAFKA_BEAN_NAME_ITEM_CONSUMER_FACTORY)
     public void consume(final ConsumerRecord<String, Item> itemRecord) {
 
         final Header deleteHeader = itemRecord.headers().lastHeader("delete");

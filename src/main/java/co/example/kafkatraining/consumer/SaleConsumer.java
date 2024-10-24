@@ -8,6 +8,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import static co.example.kafkatraining.config.KafkaConfig.KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY;
+import static co.example.kafkatraining.config.KafkaConfig.TOPIC_SALES;
 
 @Component
 @Slf4j
@@ -16,7 +17,7 @@ public class SaleConsumer {
 
     private final SalesHandler salesHandler;
 
-    @KafkaListener(id = "SALES", topics = "SALES", containerFactory = KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY)
+    @KafkaListener(id = TOPIC_SALES, topics = TOPIC_SALES, containerFactory = KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY)
     public void consume(final Sale sale) {
 
         log.debug("sale: {}", sale);
