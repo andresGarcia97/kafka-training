@@ -20,7 +20,7 @@ public class SaleConsumer {
     @KafkaListener(id = TOPIC_SALES, topics = TOPIC_SALES, containerFactory = KAFKA_BEAN_NAME_SALE_CONSUMER_FACTORY)
     public void consume(final Sale sale) {
 
-        log.debug("sale: {}", sale);
+        log.info("sale: {}", sale);
         salesHandler.process(sale);
 
     }

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -52,6 +53,15 @@ public class SalesHandler {
 
         final List<SaleItemEntity> saleItems = saveItemsSale(saleSaved, stockUpdates, sale);
         log.info("saleItems: {}", saleItems);
+
+        final double calculatedAmount = calculateCorrectValueSale(saleItems);
+
+        if(calculatedAmount != sale.amount()){
+            saleSaved.setAmount(calculatedAmount);
+            final SaleEntity saleCorrectionAmount = saleRepository.save(saleSaved);
+            log.warn("the amounts are not identical, amount: {}, calculated: {}, saleCorrectionId: {}", sale.amount(), calculatedAmount, saleCorrectionAmount.getId());
+            log.warn("the amounts are not identical, saleItems: {}, itemsReceived: {}, customerId: {}", saleItems, sale.items().size(), saleCorrectionAmount.getCustomerId());
+        }
 
         sendAlertsLowStock(stockUpdates, sale);
 
@@ -131,6 +141,12 @@ public class SalesHandler {
         });
 
         return saleItemRepository.saveAll(saleItemEntities);
+    }
+
+    private double calculateCorrectValueSale(final List<SaleItemEntity> stockUpdates){
+        return stockUpdates.stream()
+                .map(item -> item.getQuantity() * item.getValue())
+                .reduce(0.0, Double::sum);
     }
 
 }
